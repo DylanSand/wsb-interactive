@@ -1,82 +1,58 @@
+
 import { Injectable } from '@angular/core';
-import { Socket } from 'ngx-socket-io'
-import { Observable } from "rxjs";
-import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { StorageMap } from '@ngx-pwa/local-storage';
+import { HttpClient } from '@angular/common/http';
+import { AppEventService } from '../events/events.service';
 
-import { AppEventService } from "../events/events.service";
-import { AppEvents } from "../../models/app-event-enums/app-events";
-import { IAuthToken } from "../../interface/IAuthToken";
-import { environment } from '../../../environments/environment';
-
-@Injectable({
-  providedIn: 'root'
-})
-export class SocketEndpoint extends Socket {
-
-  public API_ENDPOINT = environment.API_ENDPOINT;
-  private LOGIN_DETAILS_TOKEN:string = "piriko-auth-token";
-  private authToken: IAuthToken | undefined;
-
+@Injectable()
+export class WsbProvider {
+  public curPost = null;
+  private authorDict = {};
+  private commentDict = {};
+  public allComments = [];
   constructor(private httpClient: HttpClient,
-              private _storage: StorageMap,
-              private _appEvents: AppEventService) {
-
-    super({ url: environment.SOCKET_ENDPOINT, options: {}});
-
-    // FOR DEV MULTI-SERVER:
-    //super({ url: 'http://localhost:' + (8082 + Math.floor(Math.random() * Math.floor(2))), options: {}});
-
-    this.bind();
-    this.getToken();
-
-    this.connectSocket();
+              private appEvents: AppEventService) {
   }
-
-  public connectSocket() {
-    this.connect();
-  }
-
-  private bind() {
-    this._appEvents.subscribe(AppEvents.NEW_AUTH_TOKEN, (authToken: IAuthToken) => this.authToken = authToken);
-    this._appEvents.subscribe(AppEvents.REMOVE_AUTH_TOKEN, ()=> this.authToken = undefined);
-  }
-
-  public httpPost(url: string, body?: any): Observable<Object>{
-    return this.httpClient.post(url, body, {
-      headers: this.getHeader()
-    });
-  }
-
-  public httpGET(url: string, params?: { [param: string]: string | string[] }): Observable<Object>{
-    let headers = this.getHeader();
-    return this.httpClient.get(url, {
-      headers,
-      params
-    });
-  }
-
-  private getHeader(): HttpHeaders {
-    if(this.authToken && this.authToken.accessToken) {
-      return new HttpHeaders({
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer ' + this.authToken.accessToken.token
-      });
-    } else {
-      return new HttpHeaders({
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      });
+  public startDailyThread() {
+    const cur_day = (new Date()).getDay();
+    let url = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3ADaily&sort=new';
+    if (cur_day === 0 || cur_day === 6) {
+      url = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3AWeekend&sort=new';
     }
+    this.httpClient.get(url)
+      .subscribe(posts => {
+        this.curPost = posts['data']['children'][0]['data'];
+        // console.log('Current thread: ' + this.curPost['title']);
+        this.updateDailyThread(true);
+      });
   }
-
-  private async getToken(): Promise<void> {
-    this._storage.get(this.LOGIN_DETAILS_TOKEN).subscribe( (token: any) =>{
-      if(token) {
-        this.authToken = JSON.parse(token);
-      }
-    });
+  public updateDailyThread(sendEvent: boolean) {
+    this.httpClient.get(this.curPost['url'] + '.json?sort=new&limit=1000&depth=1')
+      .subscribe(commentsResp => {
+        const comments = commentsResp[1]['data']['children'];
+        if (comments.length === 0) {
+          this.updateDailyThread(sendEvent);
+          return;
+        }
+        for (const comment of comments) {
+          if (this.commentDict[comment['data']['name']] || comment['data']['author'] === '[deleted]' || !comment['data']['body']) {
+            continue;
+          }
+          if (this.authorDict[comment['data']['author']]) {
+            this.allComments.push([comment['data'], this.authorDict[comment['data']['author']]]);
+            this.commentDict[comment['data']['name']] = true;
+          } else {
+            this.httpClient.get('https://api.reddit.com/user/' + comment['data']['author'] + '/about')
+              .subscribe(authorResp => {
+                this.allComments.push([comment['data'], Number(authorResp['data']['created_utc'])]);
+                this.authorDict[comment['data']['author']] = Number(authorResp['data']['created_utc']);
+                this.commentDict[comment['data']['name']] = true;
+              });
+          }
+        }
+        if (sendEvent) {
+          this.appEvents.publish('thread-started');
+        }
+      });
   }
 
 }

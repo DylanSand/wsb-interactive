@@ -1,127 +1,122 @@
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { NgForm } from "@angular/forms";
-//import { NavController, LoadingController, Loading } from 'ionic-angular';
-
-import { AppEventService } from "../../services/events/events.service";
-import { AppEvents } from '../../models/app-event-enums/app-events';
-import { ProfileManager } from "../../services/profile.manager";
-import { LoginDetails } from "../../models/account/LoginDetails";
-import { AccountManager } from "../../services/account-manager/account-manager";
-import { EventManager } from "../../services/event.manager";
-//import { CreateProfilePage } from "../create-profile/create-profile";
-//import { SignupPage } from '../signup/signup';
-//import { UiPopupProvider } from "../../services/ui-popup";
-//import { VerifyAccountPage } from "../verify-account/verify-account";
-//import { ForgetPasswordPage } from "../forget-password/forget-password";
-//import { VirtualPage } from "../virtual/virtual";
+import { WsbProvider } from '../../providers/wsb-provider/wsb-provider';
+import { AppEventService } from '../../providers/events/events.service';
 
 
 @Component({
-  selector: 'app-login',
-  templateUrl: 'login.html',
-  styleUrls: ['login.scss']
+  selector: 'app-daily-thread',
+  templateUrl: 'daily-thread.html',
+  styleUrls: ['daily-thread.scss']
 })
-export class LoginPage implements OnInit {
-
-  // @ts-ignore
-  public loginDetails: LoginDetails;
-  private _isLoggedIn:boolean;
-  private _loadHomepage: () => void;
-  private _loginResultHandler: (data:any) => void;
-
-  public usernameInvalid = false;
-  public passwordInvalid = false;
-  public formSubmission = false;
-  public errorMessage: string;
-
-  constructor(private _ionicEvents: AppEventService,
-              private _eventManager: EventManager,
-              private _accountManager: AccountManager,
-              private _profileManager: ProfileManager,
-              private router: Router,
-              private route: ActivatedRoute) {
-    console.log('-------------------------------');
-
-    console.log('login loading......')
+export class DailyThreadComponent implements OnInit {
+  // Class parameters:
+  private OLD_USER_LIMIT = 31557600 * 2;
+  private MID_USER_LIMIT = 31557600;
+  private COMMENT_REFRESH_TIME = 4000;
+  // Class variables:
+  private runCommentOrganizer = true;
+  public oldUserComments = [];
+  public midUserComments = [];
+  public newUserComments = [];
+  public sortedComments = {};
+  public oldBottom = true;
+  public midBottom = true;
+  public newBottom = true;
+  constructor(public wsb: WsbProvider,
+              private appEvents: AppEventService) {
   }
-
+  @ViewChild('oldCol') private oldCol: ElementRef;
+  @ViewChild('midCol') private midCol: ElementRef;
+  @ViewChild('newCol') private newCol: ElementRef;
   ngOnInit(): void {
-    this.setup();
-    this.bind();
-  }
-
-  ionViewDidLeave() {
-    this.unbind();
-  }
-
-  setup() {
-    let that = this;
-    this._loadHomepage = () => {
-      this.formSubmission = false;
-      if (that._profileManager.ready && that._eventManager.ready && !that._isLoggedIn) {
-        that._isLoggedIn = true;
-        this.formSubmission = false;
-        console.log('..... logged in ......');
-        //Todo (iamjonatan) route to home
-        //that.navCtrl.setRoot(VirtualPage);
-        that.router.navigate(['/#']);
+    this.wsb.startDailyThread();
+    const startThread = () => {
+      if (this.wsb.allComments.length === 0) {
+        setTimeout(() => {
+          this.startCommentOrganizer();
+        }, 300);
+      } else {
+        this.startCommentOrganizer();
       }
+      this.appEvents.unsubscribe('thread-started', startThread);
     };
-
-    this._loginResultHandler = (
-      data:{ isLoggedIn: boolean, user: { id: string; email: string; username: string; hasProfile: boolean; }, error:any }) =>{
-      this.formSubmission = false;
-      if(data.isLoggedIn === true) {
-        if(data.user && data.user.hasProfile === false) {
-          //this.navCtrl.push(CreateProfilePage, data.user);
-        } else {
-          this._loadHomepage();
-        }
-      } else  {
-        let err = data.error;
-
-        switch (err.code) {
-          case 'UserNotConfirmedException':
-            //if(err.userId) this.navCtrl.push(VerifyAccountPage, { userId: err.userId, nextpage: 'login' });
-            break;
-          case 'InvalidInputDataException':
-          case 'InvalidLoginDetailsException':
-            if(err.message) this.errorMessage = err.message;
-            break;
-        }
-      }
-    };
+    if (this.wsb.allComments.length === 0) {
+      this.appEvents.subscribe('thread-started', startThread);
+    } else {
+      this.startCommentOrganizer();
+    }
+    setInterval(() => {
+      this.updateScroll();
+    }, 100);
   }
-
-  login(loginForm: NgForm) {
-    console.log('..... about to login ......');
-    if(this.isValidInput(loginForm)) {
-      console.log('..... passed input check, logging in ......');
-      this.formSubmission = true;
-      this._accountManager.login({
-        username: loginForm.value.username.trim().toLocaleLowerCase(),
-        password: loginForm.value.password
-      }, true);
+  startCommentOrganizer() {
+    if (this.runCommentOrganizer) {
+      if (this.wsb.allComments.length !== 0) {
+        const cur_time = (new Date()).getTime() / 1000;
+        for (const comment of this.wsb.allComments) {
+          if (!this.sortedComments[comment[0]['name']]) {
+            if (cur_time - comment[1] < this.MID_USER_LIMIT) {
+              this.newUserComments.push(comment[0]);
+            } else {
+              if (cur_time - comment[1] < this.OLD_USER_LIMIT) {
+                this.midUserComments.push(comment[0]);
+              } else {
+                this.oldUserComments.push(comment[0]);
+              }
+            }
+            this.sortedComments[comment[0]['name']] = true;
+          }
+        }
+        this.oldUserComments.sort((a, b) => Number(a['created_utc']) - Number(b['created_utc']));
+        this.midUserComments.sort((a, b) => Number(a['created_utc']) - Number(b['created_utc']));
+        this.newUserComments.sort((a, b) => Number(a['created_utc']) - Number(b['created_utc']));
+        this.wsb.updateDailyThread(false);
+        setTimeout(() => {
+          this.startCommentOrganizer();
+        }, this.COMMENT_REFRESH_TIME);
+      } else {
+        setTimeout(() => {
+          this.startCommentOrganizer();
+        }, this.COMMENT_REFRESH_TIME);
+      }
     }
   }
-
-  isValidInput(loginForm: NgForm):boolean {
-    this.usernameInvalid = loginForm.value.username.trim() == ''
-    this.passwordInvalid = loginForm.value.password.length == 0;
-    return !this.usernameInvalid && !this.passwordInvalid;
+  toggleCommentOrganizer() {
+    if (this.runCommentOrganizer) {
+      this.runCommentOrganizer = false;
+    } else {
+      this.runCommentOrganizer = true;
+      this.startCommentOrganizer();
+    }
   }
-
-  private bind() {
-    this._ionicEvents.subscribe(AppEvents.USER_LOGIN_RESULT, this._loginResultHandler);
-    this._ionicEvents.subscribe(AppEvents.CURRENT_PROFILE_UPDATED, this._loadHomepage);
-    this._ionicEvents.subscribe(AppEvents.EVENTS_UPDATED, this._loadHomepage);
+  scrollCheck(type) {
+    if (type === 1) {
+      // tslint:disable-next-line:max-line-length
+      this.oldBottom = this.oldCol.nativeElement.scrollHeight - this.oldCol.nativeElement.scrollTop === this.oldCol.nativeElement.clientHeight;
+    }
+    if (type === 2) {
+      // tslint:disable-next-line:max-line-length
+      this.midBottom = this.midCol.nativeElement.scrollHeight - this.midCol.nativeElement.scrollTop === this.midCol.nativeElement.clientHeight;
+    }
+    if (type === 3) {
+      // tslint:disable-next-line:max-line-length
+      this.newBottom = this.newCol.nativeElement.scrollHeight - this.newCol.nativeElement.scrollTop === this.newCol.nativeElement.clientHeight;
+    }
   }
-
-  private unbind() {
-    this._ionicEvents.unsubscribe(AppEvents.USER_LOGIN_RESULT, this._loginResultHandler);
-    this._ionicEvents.unsubscribe(AppEvents.CURRENT_PROFILE_UPDATED, this._loadHomepage);
+  updateScroll() {
+    if (this.oldBottom) {
+      this.oldCol.nativeElement.scrollTop = this.oldCol.nativeElement.scrollHeight;
+      this.oldBottom = true;
+    }
+    if (this.midBottom) {
+      this.midCol.nativeElement.scrollTop = this.midCol.nativeElement.scrollHeight;
+      this.midBottom = true;
+    }
+    if (this.newBottom) {
+      this.newCol.nativeElement.scrollTop = this.newCol.nativeElement.scrollHeight;
+      this.newBottom = true;
+    }
   }
-
 }

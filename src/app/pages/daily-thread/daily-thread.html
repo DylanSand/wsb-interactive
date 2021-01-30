@@ -1,28 +1,62 @@
-<div class="login-container">
-  <div class="row">
-    <img class="img-logo mb-4" src="assets/icon/logo.png" />
-
-    <div *ngIf="errorMessage" class="text-danger my-2">{{errorMessage}}</div>
-
-    <form class="login-form" #loginForm="ngForm" (ngSubmit)="login(loginForm)">
-      <div class="form-group">
-        <label for="username">Username/Email</label>
-        <input ngModel type="text" class="form-control" [class.is-invalid]="usernameInvalid"
-               id="username" name="username" aria-describedby="usernameHelp" placeholder="username" required>
-        <small id="usernameHelp" class="invalid-feedback">Incorrect username or email</small>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">WSB Interactive</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="#">Daily Thread Activity <span class="sr-only">(current)</span></a>
+      </li>
+      <!--<li class="nav-item">
+        <a class="nav-link" href="#">Settings</a>
+      </li>-->
+    </ul>
+  </div>
+</nav>
+<div>
+  <div class="d-flex justify-content-center">
+    <h3 *ngIf="!wsb.curPost">Current Post: N/A</h3>
+    <h3 *ngIf="wsb.curPost">Current Post: {{wsb.curPost['title']}}</h3>
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm" style="height: calc(100vh - 110px); overflow-y: scroll;" #oldCol (change)="updateScroll()" (wheel)="scrollCheck(1)">
+        <div class="d-flex justify-content-center">
+          <div class="alert alert-warning" style="position: fixed; z-index: 10;">
+            <h4>Old Users: <span *ngIf="oldBottom" style="position: absolute; left: 2%; font-size: 52%; bottom: 2%;" class="badge badge-danger">Live</span></h4>
+          </div>
+        </div>
+        <div class="overflow-auto">
+          <div *ngFor="let comment of oldUserComments" class="alert alert-info" role="alert">
+            {{comment['body']}}
+          </div>
+        </div>
       </div>
-
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input ngModel type="password" class="form-control" [class.is-invalid]="passwordInvalid" id="password"
-               name="password" aria-describedby="usernameHelp" placeholder="password" required>
-        <small id="passwordHelp" class="invalid-feedback">Incorrect password</small>
+      <div class="col-sm" style="height: calc(100vh - 110px); overflow-y: scroll;" #midCol (change)="updateScroll()" (wheel)="scrollCheck(2)">
+        <div class="d-flex justify-content-center">
+          <div class="alert alert-warning" style="position: fixed; z-index: 10;">
+            <h4>Mid Users: <span *ngIf="midBottom" style="position: absolute; left: 2%; font-size: 52%; bottom: 2%;" class="badge badge-danger">Live</span></h4>
+          </div>
+        </div>
+        <div class="overflow-auto">
+          <div *ngFor="let comment of midUserComments" class="alert alert-info" role="alert">
+            {{comment['body']}}
+          </div>
+        </div>
       </div>
-
-      <button [disabled]="formSubmission" type="submit" class="btn btn-primary login-button">
-        {{ formSubmission ? 'LOGGING..' : 'LOGIN'}}</button>
-      <a class="my-2" routerLink="/signup" routerLinkActive="active">Create an account</a>
-      <a class="my-2" routerLink="/forgot-password" routerLinkActive="active">Forgot password</a>
-    </form>
+      <div class="col-sm" style="height: calc(100vh - 110px); overflow-y: scroll;" #newCol (change)="updateScroll()" (wheel)="scrollCheck(3)">
+        <div class="d-flex justify-content-center">
+          <div class="alert alert-warning" style="position: fixed; z-index: 10;">
+            <h4>New Users: <span *ngIf="newBottom" style="position: absolute; left: 2%; font-size: 52%; bottom: 2%;" class="badge badge-danger">Live</span></h4>
+          </div>
+        </div>
+        <div class="overflow-auto">
+          <div *ngFor="let comment of newUserComments" class="alert alert-info" role="alert">
+            {{comment['body']}}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
