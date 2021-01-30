@@ -1,0 +1,28 @@
+<div class="login-container">
+  <div class="row">
+    <img class="img-logo mb-4" src="assets/icon/logo.png" />
+
+    <div *ngIf="errorMessage" class="text-danger my-2">{{errorMessage}}</div>
+
+    <form class="login-form" #loginForm="ngForm" (ngSubmit)="login(loginForm)">
+      <div class="form-group">
+        <label for="username">Username/Email</label>
+        <input ngModel type="text" class="form-control" [class.is-invalid]="usernameInvalid"
+               id="username" name="username" aria-describedby="usernameHelp" placeholder="username" required>
+        <small id="usernameHelp" class="invalid-feedback">Incorrect username or email</small>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input ngModel type="password" class="form-control" [class.is-invalid]="passwordInvalid" id="password"
+               name="password" aria-describedby="usernameHelp" placeholder="password" required>
+        <small id="passwordHelp" class="invalid-feedback">Incorrect password</small>
+      </div>
+
+      <button [disabled]="formSubmission" type="submit" class="btn btn-primary login-button">
+        {{ formSubmission ? 'LOGGING..' : 'LOGIN'}}</button>
+      <a class="my-2" routerLink="/signup" routerLinkActive="active">Create an account</a>
+      <a class="my-2" routerLink="/forgot-password" routerLinkActive="active">Forgot password</a>
+    </form>
+  </div>
+</div>
