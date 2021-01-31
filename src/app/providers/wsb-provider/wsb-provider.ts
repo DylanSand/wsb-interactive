@@ -6,6 +6,7 @@ import { AppEventService } from '../events/events.service';
 @Injectable()
 export class WsbProvider {
   public curPost = null;
+  public altPost = null;
   private authorDict = {};
   private commentDict = {};
   public allComments = [];
@@ -14,9 +15,14 @@ export class WsbProvider {
   }
   public startDailyThread() {
     const cur_day = (new Date()).getDay();
-    let url = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3ADaily&sort=new';
+    // tslint:disable-next-line:max-line-length
+    let url = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3ADaily%20AND%20Daily&sort=new';
+    let altUrl = '';
     if (cur_day === 0 || cur_day === 6) {
-      url = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3AWeekend&sort=new';
+      // tslint:disable-next-line:max-line-length
+      url = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3AWeekend%20AND%20Weekend&sort=new';
+      // tslint:disable-next-line:max-line-length
+      altUrl = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3ADaily%20AND%20Daily&sort=new';
     }
     this.httpClient.get(url)
       .subscribe(posts => {
@@ -24,6 +30,12 @@ export class WsbProvider {
         // console.log('Current thread: ' + this.curPost['title']);
         this.updateDailyThread(true);
       });
+    if (cur_day === 0 || cur_day === 6) {
+      this.httpClient.get(altUrl)
+        .subscribe(posts => {
+          this.altPost = posts['data']['children'][0]['data'];
+        });
+    }
   }
   public updateDailyThread(sendEvent: boolean) {
     this.httpClient.get(this.curPost['url'] + '.json?sort=new&limit=1000&depth=1')
