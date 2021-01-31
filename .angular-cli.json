@@ -59,5 +59,6 @@
   "defaults": {
     "styleExt": "css",
     "component": {}
-  }
+  },
+  "version": 1
 }
