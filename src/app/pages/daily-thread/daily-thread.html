@@ -15,8 +15,8 @@
           Pick Thread:
         </a>
         <div ngbDropdownMenu aria-labelledby="navbarDropdown3" class="dropdown-menu">
-          <a ngbDropdownItem (click)="$event.preventDefault()">{{wsb.curPost.title}}</a>
-          <a *ngIf="wsb.altPost" ngbDropdownItem (click)="$event.preventDefault()">{{wsb.altPost.title}}</a>
+          <a ngbDropdownItem (click)="switchThread(wsb.curPost)">{{wsb.curPost.title}}</a>
+          <a *ngIf="wsb.altPost" ngbDropdownItem (click)="switchThread(wsb.altPost)">{{wsb.altPost.title}}</a>
         </div>
       </li>
     </ul>
@@ -25,7 +25,7 @@
 <div>
   <div class="d-flex justify-content-center">
     <h3 *ngIf="!wsb.curPost">Current Post: N/A</h3>
-    <h3 *ngIf="wsb.curPost">Current Post: {{wsb.curPost['title']}}</h3>
+    <h3 *ngIf="wsb.curPost">Current Post: {{wsb.curPost.title}}</h3>
   </div>
   <div class="container">
     <div class="row">
@@ -36,9 +36,18 @@
           </div>
         </div>
         <div class="overflow-auto">
-          <div *ngFor="let comment of oldUserComments" class="alert alert-info" role="alert">
-            {{comment['body']}}
+          <div *ngFor="let comment of allUserComments">
+            <div *ngIf="curTime - comment[1] > OLD_USER_LIMIT" class="alert alert-info" role="alert">
+              <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment[0].author}}:</i>
+              <br>
+              {{comment[0].body}}
+            </div>
           </div>
+          <!--<div *ngFor="let comment of oldUserComments" class="alert alert-info" role="alert">
+            <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment.author}}:</i>
+            <br>
+            {{comment.body}}
+          </div>-->
         </div>
       </div>
       <div class="col-sm" style="height: calc(100vh - 110px); overflow-y: scroll;" #midCol (change)="updateScroll()" (wheel)="scrollCheck(2)">
@@ -48,9 +57,18 @@
           </div>
         </div>
         <div class="overflow-auto">
-          <div *ngFor="let comment of midUserComments" class="alert alert-info" role="alert">
-            {{comment['body']}}
+          <div *ngFor="let comment of allUserComments">
+            <div *ngIf="curTime - comment[1] < OLD_USER_LIMIT && curTime - comment[1] > MID_USER_LIMIT" class="alert alert-info" role="alert">
+              <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment[0].author}}:</i>
+              <br>
+              {{comment[0].body}}
+            </div>
           </div>
+          <!--<div *ngFor="let comment of midUserComments" class="alert alert-info" role="alert">
+            <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment.author}}:</i>
+            <br>
+            {{comment.body}}
+          </div>-->
         </div>
       </div>
       <div class="col-sm" style="height: calc(100vh - 110px); overflow-y: scroll;" #newCol (change)="updateScroll()" (wheel)="scrollCheck(3)">
@@ -60,9 +78,18 @@
           </div>
         </div>
         <div class="overflow-auto">
-          <div *ngFor="let comment of newUserComments" class="alert alert-info" role="alert">
-            {{comment['body']}}
+          <div *ngFor="let comment of allUserComments">
+            <div *ngIf="curTime - comment[1] < MID_USER_LIMIT" class="alert alert-info" role="alert">
+              <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment[0].author}}:</i>
+              <br>
+              {{comment[0].body}}
+            </div>
           </div>
+          <!--<div *ngFor="let comment of newUserComments" class="alert alert-info" role="alert">
+            <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment.author}}:</i>
+            <br>
+            {{comment.body}}
+          </div>-->
         </div>
       </div>
     </div>

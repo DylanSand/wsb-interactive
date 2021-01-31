@@ -20,10 +20,12 @@ export class DailyThreadComponent implements OnInit {
   public oldUserComments = [];
   public midUserComments = [];
   public newUserComments = [];
+  public allUserComments = [];
   public sortedComments = {};
   public oldBottom = true;
   public midBottom = true;
   public newBottom = true;
+  public curTime = (new Date()).getTime() / 1000;
   constructor(public wsb: WsbProvider,
               private appEvents: AppEventService) {
   }
@@ -54,13 +56,14 @@ export class DailyThreadComponent implements OnInit {
   startCommentOrganizer(): void {
     if (this.runCommentOrganizer) {
       if (this.wsb.allComments.length !== 0) {
-        const curTime = (new Date()).getTime() / 1000;
+        this.curTime = (new Date()).getTime() / 1000;
+        /*
         for (const comment of this.wsb.allComments) {
           if (!this.sortedComments[comment[0].name]) {
-            if (curTime - comment[1] < this.MID_USER_LIMIT) {
+            if (this.curTime - comment[1] < this.MID_USER_LIMIT) {
               this.newUserComments.push(comment[0]);
             } else {
-              if (curTime - comment[1] < this.OLD_USER_LIMIT) {
+              if (this.curTime - comment[1] < this.OLD_USER_LIMIT) {
                 this.midUserComments.push(comment[0]);
               } else {
                 this.oldUserComments.push(comment[0]);
@@ -72,6 +75,14 @@ export class DailyThreadComponent implements OnInit {
         this.oldUserComments.sort((a, b) => Number(a.created_utc) - Number(b.created_utc));
         this.midUserComments.sort((a, b) => Number(a.created_utc) - Number(b.created_utc));
         this.newUserComments.sort((a, b) => Number(a.created_utc) - Number(b.created_utc));
+         */
+        for (const comment of this.wsb.allComments) {
+          if (!this.sortedComments[comment[0].name]) {
+            this.allUserComments.push(comment);
+            this.sortedComments[comment[0].name] = true;
+          }
+        }
+        this.allUserComments.sort((a, b) => Number(a[0].created_utc) - Number(b[0].created_utc));
         this.wsb.updateDailyThread(false);
         setTimeout(() => {
           this.startCommentOrganizer();
@@ -117,6 +128,29 @@ export class DailyThreadComponent implements OnInit {
     if (this.newBottom) {
       this.newCol.nativeElement.scrollTop = this.newCol.nativeElement.scrollHeight;
       this.newBottom = true;
+    }
+  }
+  switchThread(thread): void {
+    if (thread.title === this.wsb.altPost.title) {
+      this.runCommentOrganizer = false;
+      this.oldUserComments = [];
+      this.midUserComments = [];
+      this.newUserComments = [];
+      this.allUserComments = [];
+      this.sortedComments = {};
+      const startThread = () => {
+        if (this.wsb.allComments.length === 0) {
+          setTimeout(() => {
+            this.startCommentOrganizer();
+          }, 300);
+        } else {
+          this.startCommentOrganizer();
+        }
+        this.appEvents.unsubscribe('thread-started', startThread);
+      };
+      this.appEvents.subscribe('thread-started', startThread);
+      this.runCommentOrganizer = true;
+      this.wsb.switchToAlt();
     }
   }
 }

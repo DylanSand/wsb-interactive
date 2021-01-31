@@ -45,7 +45,7 @@ export class WsbProvider {
           return;
         }
         for (const comment of comments) {
-          if (this.commentDict[comment.data.name] || comment.data.author === '[deleted]' || !comment.data.body) {
+          if (this.commentDict[comment.data.name] || comment.data.author === '[deleted]' || !comment.data.body || comment.data.parent_id !== this.curPost.name) {
             continue;
           }
           if (this.authorDict[comment.data.author]) {
@@ -93,5 +93,12 @@ export class WsbProvider {
         }
       });
   }
-
+  switchToAlt(): void {
+    const temp = JSON.parse(JSON.stringify(this.curPost));
+    this.curPost = this.altPost;
+    this.altPost = temp;
+    this.commentDict = {};
+    this.allComments = [];
+    this.updateDailyThread(true);
+  }
 }
