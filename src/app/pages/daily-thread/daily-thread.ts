@@ -26,6 +26,7 @@ export class DailyThreadComponent implements OnInit {
   public midBottom = true;
   public newBottom = true;
   public curTime = (new Date()).getTime() / 1000;
+  public showLoading = false;
   constructor(public wsb: WsbProvider,
               private appEvents: AppEventService) {
   }
@@ -33,6 +34,7 @@ export class DailyThreadComponent implements OnInit {
   @ViewChild('midCol') private midCol: ElementRef;
   @ViewChild('newCol') private newCol: ElementRef;
   ngOnInit(): void {
+    this.showLoading = true;
     this.wsb.startDailyThread();
     const startThread = () => {
       if (this.wsb.allComments.length === 0) {
@@ -57,6 +59,7 @@ export class DailyThreadComponent implements OnInit {
     if (this.runCommentOrganizer) {
       if (this.wsb.allComments.length !== 0) {
         this.curTime = (new Date()).getTime() / 1000;
+        this.showLoading = false;
         /*
         for (const comment of this.wsb.allComments) {
           if (!this.sortedComments[comment[0].name]) {
@@ -138,19 +141,28 @@ export class DailyThreadComponent implements OnInit {
       this.newUserComments = [];
       this.allUserComments = [];
       this.sortedComments = {};
-      const startThread = () => {
-        if (this.wsb.allComments.length === 0) {
-          setTimeout(() => {
+      this.showLoading = true;
+
+      setTimeout(() => {
+        this.oldUserComments = [];
+        this.midUserComments = [];
+        this.newUserComments = [];
+        this.allUserComments = [];
+        this.sortedComments = {};
+        const startThread = () => {
+          if (this.wsb.allComments.length === 0) {
+            setTimeout(() => {
+              this.startCommentOrganizer();
+            }, 300);
+          } else {
             this.startCommentOrganizer();
-          }, 300);
-        } else {
-          this.startCommentOrganizer();
-        }
-        this.appEvents.unsubscribe('thread-started', startThread);
-      };
-      this.appEvents.subscribe('thread-started', startThread);
-      this.runCommentOrganizer = true;
-      this.wsb.switchToAlt();
+          }
+          this.appEvents.unsubscribe('thread-started', startThread);
+        };
+        this.appEvents.subscribe('thread-started', startThread);
+        this.runCommentOrganizer = true;
+        this.wsb.switchToAlt();
+      }, this.COMMENT_REFRESH_TIME);
     }
   }
 }

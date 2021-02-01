@@ -8,17 +8,23 @@ import { HttpClientModule } from '@angular/common/http';
 import { WsbProvider } from './providers/wsb-provider/wsb-provider';
 import { AppEventService } from './providers/events/events.service';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { SpinnerOverlayComponent } from './components/spinner-overlay/spinner-overlay.component';
+import { SpinnerComponent } from './components/spinner/spinner.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    DailyThreadComponent
+    DailyThreadComponent,
+    SpinnerOverlayComponent,
+    SpinnerComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
-    NgbModule
+    NgbModule,
+    BrowserAnimationsModule
   ],
   providers: [
     WsbProvider,
