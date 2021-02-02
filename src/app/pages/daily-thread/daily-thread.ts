@@ -3,7 +3,7 @@ import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { WsbProvider } from '../../providers/wsb-provider/wsb-provider';
 import { AppEventService } from '../../providers/events/events.service';
-
+import { Options } from '@angular-slider/ngx-slider';
 
 @Component({
   selector: 'app-daily-thread',
@@ -12,8 +12,8 @@ import { AppEventService } from '../../providers/events/events.service';
 })
 export class DailyThreadComponent implements OnInit {
   // Class parameters:
-  private OLD_USER_LIMIT = 31557600 * 2;
-  private MID_USER_LIMIT = 31557600;
+  public OLD_USER_LIMIT = 24;
+  public MID_USER_LIMIT = 12;
   private COMMENT_REFRESH_TIME = 4000;
   // Class variables:
   private runCommentOrganizer = true;
@@ -27,6 +27,10 @@ export class DailyThreadComponent implements OnInit {
   public newBottom = true;
   public curTime = (new Date()).getTime() / 1000;
   public showLoading = false;
+  public slideOptions: Options = {
+    floor: 1,
+    ceil: 36
+  };
   constructor(public wsb: WsbProvider,
               private appEvents: AppEventService) {
   }

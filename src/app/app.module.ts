@@ -11,6 +11,7 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { SpinnerOverlayComponent } from './components/spinner-overlay/spinner-overlay.component';
 import { SpinnerComponent } from './components/spinner/spinner.component';
+import { NgxSliderModule } from '@angular-slider/ngx-slider';
 
 @NgModule({
   declarations: [
@@ -24,6 +25,7 @@ import { SpinnerComponent } from './components/spinner/spinner.component';
     AppRoutingModule,
     HttpClientModule,
     NgbModule,
+    NgxSliderModule,
     BrowserAnimationsModule
   ],
   providers: [

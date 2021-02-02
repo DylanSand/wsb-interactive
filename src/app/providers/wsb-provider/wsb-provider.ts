@@ -21,6 +21,8 @@ export class WsbProvider {
     if (curDay === 0 || curDay === 6) {
       url = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3AWeekend%20AND%20Weekend&sort=new';
       altUrl = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3ADaily%20AND%20Daily&sort=new';
+    } else {
+      altUrl = 'https://www.reddit.com/r/wallstreetbets/search.json?q=subreddit%3Awallstreetbets%20AND%20flair%3ADaily%20AND%20Daily&sort=new';
     }
     this.httpClient.get(url)
       .subscribe(posts => {
@@ -33,6 +35,12 @@ export class WsbProvider {
         .subscribe(posts => {
           // @ts-ignore
           this.altPost = posts.data.children[0].data;
+        });
+    } else {
+      this.httpClient.get(altUrl)
+        .subscribe(posts => {
+          // @ts-ignore
+          this.altPost = posts.data.children[1].data;
         });
     }
   }
