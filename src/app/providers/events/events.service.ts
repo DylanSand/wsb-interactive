@@ -1,8 +1,6 @@
 
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
-import { from } from 'rxjs/observable/from';
+import { Observable, Subject, from } from 'rxjs';
 
 @Injectable()
 export class AppEventService {
@@ -23,7 +21,7 @@ export class AppEventService {
       });
   }
 
-  subscribe(eventName: string, handler: (...params: any[]) => any) {
+  subscribe(eventName: string, handler: (...params: any[]) => any): void {
     if (this.listenersMap.has(eventName)) {
       const listeners = this.listenersMap.get(eventName);
       if (listeners) {
@@ -34,7 +32,7 @@ export class AppEventService {
     }
   }
 
-  unsubscribe(eventName: string, handler: (...params: any[]) => any) {
+  unsubscribe(eventName: string, handler: (...params: any[]) => any): void {
     if (this.listenersMap.has(eventName)) {
       let listeners = this.listenersMap.get(eventName);
       if (listeners) {
@@ -44,7 +42,7 @@ export class AppEventService {
     }
   }
 
-  publish(eventName: string, ...data: any[]) {
+  publish(eventName: string, ...data: any[]): void {
     this.eventsSubject.next({ eventName, data});
   }
 

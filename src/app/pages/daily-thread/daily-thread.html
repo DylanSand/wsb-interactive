@@ -1,5 +1,8 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-  <a class="navbar-brand" href="#">WSB Interactive</a>
+  <a class="navbar-brand" href="#">
+    <img src="assets/wsblogolarge.png" alt="wsb_logo" style="height: 24px; position: relative; top: -3px;">
+    WSB Interactive
+  </a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -8,55 +11,103 @@
       <li class="nav-item active">
         <a class="nav-link" href="#">Daily Thread Activity <span class="sr-only">(current)</span></a>
       </li>
-      <!--<li class="nav-item">
-        <a class="nav-link" href="#">Settings</a>
-      </li>-->
+    </ul>
+    <ul class="navbar-nav ml-auto">
+      <li *ngIf="wsb.curPost && wsb.altPost" class="nav-item" ngbDropdown display="dynamic" placement="bottom-right">
+        <a class="nav-link" tabindex="0" ngbDropdownToggle id="navbarDropdown3" role="button">
+          {{wsb.curPost.title}}
+        </a>
+        <div ngbDropdownMenu aria-labelledby="navbarDropdown3" class="dropdown-menu">
+          <a ngbDropdownItem (click)="switchThread(wsb.altPost)">{{wsb.altPost.title}}</a>
+        </div>
+      </li>
+      <li *ngIf="wsb.curPost && !wsb.altPost" class="nav-item">
+        <a class="nav-link" tabindex="0" role="button">
+          {{wsb.curPost.title}}
+        </a>
+      </li>
     </ul>
   </div>
 </nav>
 <div>
-  <div class="d-flex justify-content-center">
+  <!--<div class="d-flex justify-content-center">
     <h3 *ngIf="!wsb.curPost">Current Post: N/A</h3>
-    <h3 *ngIf="wsb.curPost">Current Post: {{wsb.curPost['title']}}</h3>
+    <h3 *ngIf="wsb.curPost">Current Post: {{wsb.curPost.title}}</h3>
+  </div>-->
+  <div class="d-flex justify-content-center" style="height: 80px;">
+    <p style="position: absolute; right: 60%;"><strong>Mid Barrier:</strong> {{MID_USER_LIMIT}} months</p>
+    <p style="position: absolute; left: calc(50vw - 78px);"><strong>Account Age Control</strong></p>
+    <p style="position: absolute; left: 60%;"><strong>Old Barrier:</strong> {{OLD_USER_LIMIT}} months</p>
+    <ngx-slider [(value)]="MID_USER_LIMIT" [(highValue)]="OLD_USER_LIMIT" [options]="slideOptions" style="position: relative; top:20px; width: 50%;"></ngx-slider>
   </div>
   <div class="container">
+    <div class="d-flex justify-content-center" style="position: absolute; left: 50%;">
+      <div class="d-flex justify-content-center" style="position: absolute; left: -459px; width: 166px;"><!-- SOME DIST (170) + 249 -->
+        <div class="alert alert-warning" style="z-index: 10;">
+          <h4>Old Users: <span *ngIf="oldBottom" style="position: absolute; left: 2%; font-size: 52%; bottom: 2%;" class="badge badge-danger">Live</span></h4>
+        </div>
+      </div>
+      <div class="d-flex justify-content-center" style="position: absolute; left: -83px; width: 166px;">
+        <div class="alert alert-warning" style="z-index: 10;">
+          <h4>Mid Users: <span *ngIf="midBottom" style="position: absolute; left: 2%; font-size: 52%; bottom: 2%;" class="badge badge-danger">Live</span></h4>
+        </div>
+      </div>
+      <div class="d-flex justify-content-center" style="position: absolute; left: 293px; width: 166px;"><!-- SOME DIST (170) + 83 -->
+        <div class="alert alert-warning" style="z-index: 10;">
+          <h4>New Users: <span *ngIf="newBottom" style="position: absolute; left: 2%; font-size: 52%; bottom: 2%;" class="badge badge-danger">Live</span></h4>
+        </div>
+      </div>
+    </div>
     <div class="row">
-      <div class="col-sm" style="height: calc(100vh - 110px); overflow-y: scroll;" #oldCol (change)="updateScroll()" (wheel)="scrollCheck(1)">
-        <div class="d-flex justify-content-center">
-          <div class="alert alert-warning" style="position: fixed; z-index: 10;">
-            <h4>Old Users: <span *ngIf="oldBottom" style="position: absolute; left: 2%; font-size: 52%; bottom: 2%;" class="badge badge-danger">Live</span></h4>
-          </div>
-        </div>
+      <div class="col-sm" style="height: calc(100vh - 140px); overflow-y: scroll;" #oldCol (change)="updateScroll()" (wheel)="scrollCheck(1)">
         <div class="overflow-auto">
-          <div *ngFor="let comment of oldUserComments" class="alert alert-info" role="alert">
-            {{comment['body']}}
+          <div *ngFor="let comment of allUserComments">
+            <div *ngIf="curTime - comment[1] > (OLD_USER_LIMIT * 30 * 24 * 60 * 60)" class="alert alert-info" role="alert">
+              <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment[0].author}}:</i>
+              <br>
+              {{comment[0].body}}
+            </div>
           </div>
+          <!--<div *ngFor="let comment of oldUserComments" class="alert alert-info" role="alert">
+            <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment.author}}:</i>
+            <br>
+            {{comment.body}}
+          </div>-->
         </div>
       </div>
-      <div class="col-sm" style="height: calc(100vh - 110px); overflow-y: scroll;" #midCol (change)="updateScroll()" (wheel)="scrollCheck(2)">
-        <div class="d-flex justify-content-center">
-          <div class="alert alert-warning" style="position: fixed; z-index: 10;">
-            <h4>Mid Users: <span *ngIf="midBottom" style="position: absolute; left: 2%; font-size: 52%; bottom: 2%;" class="badge badge-danger">Live</span></h4>
-          </div>
-        </div>
+      <div class="col-sm" style="height: calc(100vh - 140px); overflow-y: scroll;" #midCol (change)="updateScroll()" (wheel)="scrollCheck(2)">
         <div class="overflow-auto">
-          <div *ngFor="let comment of midUserComments" class="alert alert-info" role="alert">
-            {{comment['body']}}
+          <div *ngFor="let comment of allUserComments">
+            <div *ngIf="curTime - comment[1] < (OLD_USER_LIMIT * 30 * 24 * 60 * 60) && curTime - comment[1] > (MID_USER_LIMIT * 30 * 24 * 60 * 60)" class="alert alert-info" role="alert">
+              <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment[0].author}}:</i>
+              <br>
+              {{comment[0].body}}
+            </div>
           </div>
+          <!--<div *ngFor="let comment of midUserComments" class="alert alert-info" role="alert">
+            <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment.author}}:</i>
+            <br>
+            {{comment.body}}
+          </div>-->
         </div>
       </div>
-      <div class="col-sm" style="height: calc(100vh - 110px); overflow-y: scroll;" #newCol (change)="updateScroll()" (wheel)="scrollCheck(3)">
-        <div class="d-flex justify-content-center">
-          <div class="alert alert-warning" style="position: fixed; z-index: 10;">
-            <h4>New Users: <span *ngIf="newBottom" style="position: absolute; left: 2%; font-size: 52%; bottom: 2%;" class="badge badge-danger">Live</span></h4>
-          </div>
-        </div>
+      <div class="col-sm" style="height: calc(100vh - 140px); overflow-y: scroll;" #newCol (change)="updateScroll()" (wheel)="scrollCheck(3)">
         <div class="overflow-auto">
-          <div *ngFor="let comment of newUserComments" class="alert alert-info" role="alert">
-            {{comment['body']}}
+          <div *ngFor="let comment of allUserComments">
+            <div *ngIf="curTime - comment[1] < (MID_USER_LIMIT * 30 * 24 * 60 * 60)" class="alert alert-info" role="alert">
+              <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment[0].author}}:</i>
+              <br>
+              {{comment[0].body}}
+            </div>
           </div>
+          <!--<div *ngFor="let comment of newUserComments" class="alert alert-info" role="alert">
+            <i style="color: #686868; position: absolute; left: 7px; top: 8px; font-size: 79%;">{{comment.author}}:</i>
+            <br>
+            {{comment.body}}
+          </div>-->
         </div>
       </div>
     </div>
   </div>
 </div>
+<app-spinner-overlay *ngIf="showLoading"></app-spinner-overlay>

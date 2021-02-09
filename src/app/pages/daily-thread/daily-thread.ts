@@ -3,7 +3,7 @@ import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { WsbProvider } from '../../providers/wsb-provider/wsb-provider';
 import { AppEventService } from '../../providers/events/events.service';
-
+import { Options } from '@angular-slider/ngx-slider';
 
 @Component({
   selector: 'app-daily-thread',
@@ -12,18 +12,25 @@ import { AppEventService } from '../../providers/events/events.service';
 })
 export class DailyThreadComponent implements OnInit {
   // Class parameters:
-  private OLD_USER_LIMIT = 31557600 * 2;
-  private MID_USER_LIMIT = 31557600;
+  public OLD_USER_LIMIT = 24;
+  public MID_USER_LIMIT = 12;
   private COMMENT_REFRESH_TIME = 4000;
   // Class variables:
   private runCommentOrganizer = true;
   public oldUserComments = [];
   public midUserComments = [];
   public newUserComments = [];
+  public allUserComments = [];
   public sortedComments = {};
   public oldBottom = true;
   public midBottom = true;
   public newBottom = true;
+  public curTime = (new Date()).getTime() / 1000;
+  public showLoading = false;
+  public slideOptions: Options = {
+    floor: 1,
+    ceil: 36
+  };
   constructor(public wsb: WsbProvider,
               private appEvents: AppEventService) {
   }
@@ -31,6 +38,7 @@ export class DailyThreadComponent implements OnInit {
   @ViewChild('midCol') private midCol: ElementRef;
   @ViewChild('newCol') private newCol: ElementRef;
   ngOnInit(): void {
+    this.showLoading = true;
     this.wsb.startDailyThread();
     const startThread = () => {
       if (this.wsb.allComments.length === 0) {
@@ -51,27 +59,37 @@ export class DailyThreadComponent implements OnInit {
       this.updateScroll();
     }, 100);
   }
-  startCommentOrganizer() {
+  startCommentOrganizer(): void {
     if (this.runCommentOrganizer) {
       if (this.wsb.allComments.length !== 0) {
-        const cur_time = (new Date()).getTime() / 1000;
+        this.curTime = (new Date()).getTime() / 1000;
+        this.showLoading = false;
+        /*
         for (const comment of this.wsb.allComments) {
-          if (!this.sortedComments[comment[0]['name']]) {
-            if (cur_time - comment[1] < this.MID_USER_LIMIT) {
+          if (!this.sortedComments[comment[0].name]) {
+            if (this.curTime - comment[1] < this.MID_USER_LIMIT) {
               this.newUserComments.push(comment[0]);
             } else {
-              if (cur_time - comment[1] < this.OLD_USER_LIMIT) {
+              if (this.curTime - comment[1] < this.OLD_USER_LIMIT) {
                 this.midUserComments.push(comment[0]);
               } else {
                 this.oldUserComments.push(comment[0]);
               }
             }
-            this.sortedComments[comment[0]['name']] = true;
+            this.sortedComments[comment[0].name] = true;
           }
         }
-        this.oldUserComments.sort((a, b) => Number(a['created_utc']) - Number(b['created_utc']));
-        this.midUserComments.sort((a, b) => Number(a['created_utc']) - Number(b['created_utc']));
-        this.newUserComments.sort((a, b) => Number(a['created_utc']) - Number(b['created_utc']));
+        this.oldUserComments.sort((a, b) => Number(a.created_utc) - Number(b.created_utc));
+        this.midUserComments.sort((a, b) => Number(a.created_utc) - Number(b.created_utc));
+        this.newUserComments.sort((a, b) => Number(a.created_utc) - Number(b.created_utc));
+         */
+        for (const comment of this.wsb.allComments) {
+          if (!this.sortedComments[comment[0].name]) {
+            this.allUserComments.push(comment);
+            this.sortedComments[comment[0].name] = true;
+          }
+        }
+        this.allUserComments.sort((a, b) => Number(a[0].created_utc) - Number(b[0].created_utc));
         this.wsb.updateDailyThread(false);
         setTimeout(() => {
           this.startCommentOrganizer();
@@ -83,7 +101,7 @@ export class DailyThreadComponent implements OnInit {
       }
     }
   }
-  toggleCommentOrganizer() {
+  toggleCommentOrganizer(): void {
     if (this.runCommentOrganizer) {
       this.runCommentOrganizer = false;
     } else {
@@ -91,7 +109,7 @@ export class DailyThreadComponent implements OnInit {
       this.startCommentOrganizer();
     }
   }
-  scrollCheck(type) {
+  scrollCheck(type): void {
     if (type === 1) {
       // tslint:disable-next-line:max-line-length
       this.oldBottom = this.oldCol.nativeElement.scrollHeight - this.oldCol.nativeElement.scrollTop === this.oldCol.nativeElement.clientHeight;
@@ -105,7 +123,7 @@ export class DailyThreadComponent implements OnInit {
       this.newBottom = this.newCol.nativeElement.scrollHeight - this.newCol.nativeElement.scrollTop === this.newCol.nativeElement.clientHeight;
     }
   }
-  updateScroll() {
+  updateScroll(): void {
     if (this.oldBottom) {
       this.oldCol.nativeElement.scrollTop = this.oldCol.nativeElement.scrollHeight;
       this.oldBottom = true;
@@ -117,6 +135,38 @@ export class DailyThreadComponent implements OnInit {
     if (this.newBottom) {
       this.newCol.nativeElement.scrollTop = this.newCol.nativeElement.scrollHeight;
       this.newBottom = true;
+    }
+  }
+  switchThread(thread): void {
+    if (thread.title === this.wsb.altPost.title) {
+      this.runCommentOrganizer = false;
+      this.oldUserComments = [];
+      this.midUserComments = [];
+      this.newUserComments = [];
+      this.allUserComments = [];
+      this.sortedComments = {};
+      this.showLoading = true;
+
+      setTimeout(() => {
+        this.oldUserComments = [];
+        this.midUserComments = [];
+        this.newUserComments = [];
+        this.allUserComments = [];
+        this.sortedComments = {};
+        const startThread = () => {
+          if (this.wsb.allComments.length === 0) {
+            setTimeout(() => {
+              this.startCommentOrganizer();
+            }, 300);
+          } else {
+            this.startCommentOrganizer();
+          }
+          this.appEvents.unsubscribe('thread-started', startThread);
+        };
+        this.appEvents.subscribe('thread-started', startThread);
+        this.runCommentOrganizer = true;
+        this.wsb.switchToAlt();
+      }, this.COMMENT_REFRESH_TIME);
     }
   }
 }
